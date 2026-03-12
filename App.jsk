@@ -1,0 +1,281 @@
+import { useState, useEffect } from "react";
+
+const USERS = [
+{ user: "admin1", pass: "2213" },
+{ user: "admin2", pass: "2213" }
+];
+
+export default function App(){
+
+const [logged,setLogged] = useState(false);
+const [usuario,setUsuario] = useState("");
+const [senha,setSenha] = useState("");
+
+const [motoristas,setMotoristas] = useState([]);
+const [rocas,setRocas] = useState([]);
+const [registros,setRegistros] = useState([]);
+
+const [novoMotorista,setNovoMotorista] = useState("");
+const [novaPlaca,setNovaPlaca] = useState("");
+const [novaRoca,setNovaRoca] = useState("");
+
+const [data,setData] = useState("");
+const [motorista,setMotorista] = useState("");
+const [roca,setRoca] = useState("");
+const [caixas,setCaixas] = useState("");
+
+useEffect(()=>{
+
+const m = localStorage.getItem("motoristas");
+const r = localStorage.getItem("rocas");
+const c = localStorage.getItem("cargas");
+
+if(m) setMotoristas(JSON.parse(m));
+if(r) setRocas(JSON.parse(r));
+if(c) setRegistros(JSON.parse(c));
+
+},[]);
+
+useEffect(()=>{
+localStorage.setItem("motoristas",JSON.stringify(motoristas));
+},[motoristas]);
+
+useEffect(()=>{
+localStorage.setItem("rocas",JSON.stringify(rocas));
+},[rocas]);
+
+useEffect(()=>{
+localStorage.setItem("cargas",JSON.stringify(registros));
+},[registros]);
+
+const login=()=>{
+
+const ok = USERS.find(u=>u.user===usuario && u.pass===senha);
+
+if(ok) setLogged(true);
+else alert("Login incorreto");
+
+};
+
+const addMotorista=()=>{
+
+if(!novoMotorista || !novaPlaca) return;
+
+setMotoristas([...motoristas,{
+nome:novoMotorista,
+placa:novaPlaca
+}]);
+
+setNovoMotorista("");
+setNovaPlaca("");
+
+};
+
+const addRoca=()=>{
+
+if(!novaRoca) return;
+
+setRocas([...rocas,novaRoca]);
+
+setNovaRoca("");
+
+};
+
+const placaMotorista = ()=>{
+
+const m = motoristas.find(x=>x.nome===motorista);
+
+return m ? m.placa : "";
+
+};
+
+const salvarCarga=()=>{
+
+if(!data||!motorista||!roca||!caixas) return;
+
+setRegistros([...registros,{
+data,
+motorista,
+placa:placaMotorista(),
+roca,
+caixas:Number(caixas)
+}]);
+
+setCaixas("");
+
+};
+
+const totalCaixas = registros.reduce((a,b)=>a+b.caixas,0);
+
+const ranking=()=>{
+
+const map={};
+
+registros.forEach(r=>{
+
+if(!map[r.motorista])
+map[r.motorista]={nome:r.motorista,caixas:0,cargas:0};
+
+map[r.motorista].caixas+=r.caixas;
+map[r.motorista].cargas++;
+
+});
+
+return Object.values(map).sort((a,b)=>b.caixas-a.caixas);
+
+};
+
+if(!logged){
+
+return(
+
+<div style={{padding:40}}>
+
+<h1>🍅 LO & LE Logística</h1>
+
+<input placeholder="Usuário"
+value={usuario}
+onChange={e=>setUsuario(e.target.value)}
+/>
+
+<br/><br/>
+
+<input type="password"
+placeholder="Senha"
+value={senha}
+onChange={e=>setSenha(e.target.value)}
+/>
+
+<br/><br/>
+
+<button onClick={login}>Entrar</button>
+
+</div>
+
+);
+
+}
+
+return(
+
+<div style={{padding:40}}>
+
+<h1>🍅 Sistema LO & LE</h1>
+
+<h2>Cadastrar Motorista</h2>
+
+<input placeholder="Nome motorista"
+value={novoMotorista}
+onChange={e=>setNovoMotorista(e.target.value)}
+/>
+
+<input placeholder="Placa caminhão"
+value={novaPlaca}
+onChange={e=>setNovaPlaca(e.target.value)}
+/>
+
+<button onClick={addMotorista}>Adicionar</button>
+
+<h2>Cadastrar Roça</h2>
+
+<input placeholder="Nome da roça"
+value={novaRoca}
+onChange={e=>setNovaRoca(e.target.value)}
+/>
+
+<button onClick={addRoca}>Adicionar</button>
+
+<h2>Lançar carga</h2>
+
+<input type="date"
+value={data}
+onChange={e=>setData(e.target.value)}
+/>
+
+<br/><br/>
+
+<select
+value={motorista}
+onChange={e=>setMotorista(e.target.value)}
+>
+
+<option>Motorista</option>
+
+{motoristas.map(m=>(
+
+<option key={m.nome}>{m.nome}</option>
+
+))}
+
+</select>
+
+<input
+value={placaMotorista()}
+disabled
+placeholder="placa automática"
+/>
+
+<br/><br/>
+
+<select
+value={roca}
+onChange={e=>setRoca(e.target.value)}
+>
+
+<option>Roça</option>
+
+{rocas.map(r=>(
+
+<option key={r}>{r}</option>
+
+))}
+
+</select>
+
+<br/><br/>
+
+<input
+type="number"
+placeholder="Caixas"
+value={caixas}
+onChange={e=>setCaixas(e.target.value)}
+/>
+
+<button onClick={salvarCarga}>
+Salvar carga
+</button>
+
+<h2>Resumo</h2>
+
+<p>Total caixas: {totalCaixas}</p>
+<p>Total cargas: {registros.length}</p>
+
+<h2>Ranking Motoristas</h2>
+
+{ranking().map((m,i)=>(
+
+<div key={i}>
+
+{i+1}º {m.nome} - {m.caixas} caixas - {m.cargas} cargas
+
+</div>
+
+))}
+
+<h2>Histórico</h2>
+
+{registros.map((r,i)=>(
+
+<div key={i}>
+
+{r.data} | {r.motorista} | {r.placa} | {r.roca} | {r.caixas}
+
+</div>
+
+))}
+
+</div>
+
+);
+
+}
